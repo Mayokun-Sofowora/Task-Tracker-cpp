@@ -101,4 +101,4 @@ Run the application from your terminal using the compiled executable (`./task-cl
 
 ### Project Page URL
 
-*  Project hosted at: [https://github.com/Mayokun-Sofowora/Task-Tracker-cpp](https://roadmap.sh/projects/task-tracker)
+*  Project hosted at: [https://roadmap.sh/projects/task-tracker](https://roadmap.sh/projects/task-tracker)
