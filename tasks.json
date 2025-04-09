@@ -1,0 +1,79 @@
+[
+  {
+    "id": 1,
+    "description": "Buy groceries",
+    "status": "done",
+    "createdAt": "2025-04-09 11:00:00",
+    "updatedAt": "2025-04-09 20:46:23"
+  },
+  {
+    "id": 2,
+    "description": "Finish project report",
+    "status": "in-progress",
+    "createdAt": "2025-04-09 11:00:00",
+    "updatedAt": "2025-04-09 11:00:00"
+  },
+  {
+    "id": 3,
+    "description": "Call mom",
+    "status": "done",
+    "createdAt": "2025-04-09 12:00:00",
+    "updatedAt": "2025-04-09 12:00:00"
+  },
+  {
+    "id": 4,
+    "description": "Schedule dentist appointment",
+    "status": "todo",
+    "createdAt": "2025-04-09 13:00:00",
+    "updatedAt": "2025-04-09 13:00:00"
+  },
+  {
+    "id": 5,
+    "description": "Read a book",
+    "status": "in-progress",
+    "createdAt": "2025-04-09 14:00:00",
+    "updatedAt": "2025-04-09 14:00:00"
+  },
+  {
+    "id": 6,
+    "description": "Exercise",
+    "status": "done",
+    "createdAt": "2025-04-09 15:00:00",
+    "updatedAt": "2025-04-09 15:00:00"
+  },
+  {
+    "id": 7,
+    "description": "Plan weekend trip",
+    "status": "todo",
+    "createdAt": "2025-04-09 16:00:00",
+    "updatedAt": "2025-04-09 16:00:00"
+  },
+  {
+    "id": 8,
+    "description": "Organize workspace",
+    "status": "in-progress",
+    "createdAt": "2025-04-09 17:00:00",
+    "updatedAt": "2025-04-09 17:00:00"
+  },
+  {
+    "id": 9,
+    "description": "Watch a movie",
+    "status": "done",
+    "createdAt": "2025-04-09 18:00:00",
+    "updatedAt": "2025-04-09 18:00:00"
+  },
+  {
+    "id": 10,
+    "description": "Learn a new skill",
+    "status": "todo",
+    "createdAt": "2025-04-09 19:00:00",
+    "updatedAt": "2025-04-09 19:00:00"
+  },
+  {
+    "id": 11,
+    "description": "Refactor code to use Class",
+    "status": "todo",
+    "createdAt": "2025-04-09 11:31:49",
+    "updatedAt": "2025-04-09 11:31:49"
+  }
+]
