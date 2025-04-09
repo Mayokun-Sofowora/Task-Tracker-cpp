@@ -1,4 +1,4 @@
-# Simple C++ Task Tracker CLI
+# C++ Task Tracker CLI
 
 ## Overview
 
