@@ -1,7 +1,5 @@
 # C++ Task Tracker CLI
 
-## Overview
-
 Task Tracker is a simple command-line interface (CLI) application built entirely in C++ (using C++11 standards) to help you manage your tasks. It allows you to add new tasks, update existing ones, mark their progress (todo, in-progress, done), delete tasks, and list them based on their status.
 
 This project serves as a practical exercise in C++ programming, covering:
