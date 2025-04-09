@@ -22,6 +22,8 @@
 #include <stdexcept>
 #include <limits>
 #include <cctype>
+#include <format>
+#include <ranges>
 
 // --- Constants ---
 const std::string TASKS_FILE = "tasks.json";
@@ -66,7 +68,7 @@ public:
     // Default constructor: Needed for creating Task objects before populating from file
     Task() : id(0), status("todo") {}
 
-    ~Task() {}
+    ~Task() {} // Destructor (not strictly necessary here, but good practice)
 
     // --- Getters (provide read access) ---
     int getID() const { return id; }
@@ -350,15 +352,10 @@ std::vector<Task> loadTasks()
         size_t objEnd = content.find('}', objStart + 1);
         // Basic brace balancing check (doesn't handle nested objects)
         size_t nextObjStart = content.find('{', objStart + 1);
-        if (objEnd == std::string::npos || (nextObjStart != std::string::npos && objEnd > nextObjStart))
+        if (objEnd == std::string::npos || (nextObjStart != std::string::npos && objEnd > nextObjStart) || objEnd >= endPos)
         {
             std::cerr << "Error: Invalid JSON format in " << TASKS_FILE << " (mismatched or nested braces detected by simple check)." << std::endl;
             // Attempt to recover might be complex, safer to stop parsing here
-            break;
-        }
-        if (objEnd >= endPos)
-        { // Brace found is outside the array bounds
-            std::cerr << "Error: Invalid JSON format in " << TASKS_FILE << " (object brace extends beyond array)." << std::endl;
             break;
         }
 
@@ -427,7 +424,7 @@ std::vector<Task> loadTasks()
 
             if (taskValid)
             {
-                tasks.push_back(task);
+                tasks.push_back(task); // Add valid task to vector
             }
         }
         catch (const std::invalid_argument &e)
@@ -472,11 +469,11 @@ void saveTasks(const std::vector<Task> &tasks)
         file << "  }";
         if (i < tasks.size() - 1)
         {
-            file << ",\n";
+            file << ",\n"; // Comma between objects
         }
         else
         {
-            file << "\n";
+            file << "\n"; // No comma after the last object
         }
     }
     file << "]\n";
@@ -487,21 +484,17 @@ void saveTasks(const std::vector<Task> &tasks)
     }
 }
 
-// --- Task Management Logic (using Task class methods) ---
+// --- Task Management Logic (using Task class methods and C++20 features) ---
 int getNextId(const std::vector<Task> &tasks)
 {
     if (tasks.empty())
     {
         return 1;
     }
-    int maxId = 0;
-    for (const auto &task : tasks)
-    {
-        if (task.getID() > maxId)
-        { // Use getter
-            maxId = task.getID();
-        }
-    }
+    auto max_it = std::ranges::max_element(tasks, {}, &Task::getID);
+    // It's guaranteed to find an element if tasks is not empty
+    int maxId = max_it->getID(); // Dereference iterator to get Task, then get ID
+
     if (maxId >= std::numeric_limits<int>::max())
     {
         throw std::overflow_error("Cannot generate new task ID, maximum integer value reached.");
@@ -538,19 +531,12 @@ void updateTask(std::vector<Task> &tasks, int id, const std::string &newDescript
         std::cerr << "Error: New task description cannot be empty." << std::endl;
         return;
     }
-    bool found = false;
-    for (auto &task : tasks)
-    { // Need non-const reference to modify
-        if (task.getID() == id)
-        {
-            task.setDescription(newDescription); // Use setter (updates timestamp)
-            found = true;
-            break;
-        }
-    }
+    auto it = std::ranges::find_if(tasks, [id](const Task &task)
+                                   { return task.getID() == id; });
 
-    if (found)
-    {
+    if (it != tasks.end())
+    {                                       // Check if the iterator is valid (task found)
+        it->setDescription(newDescription); // Use setter via iterator (setter updates timestamp)
         saveTasks(tasks);
         std::cout << "Task " << id << " updated successfully." << std::endl;
     }
@@ -562,25 +548,13 @@ void updateTask(std::vector<Task> &tasks, int id, const std::string &newDescript
 
 void deleteTask(std::vector<Task> &tasks, int id)
 {
-    auto it = std::remove_if(tasks.begin(), tasks.end(),
-                             [id](const Task &task)
-                             { return task.getID() == id; }); // Use getter in lambda
+    size_t numRemoved = std::erase_if(tasks, [id](const Task &task)
+                                      { return task.getID() == id; }); // Use getter in lambda
 
-    if (it != tasks.end())
-    {
-        size_t numRemoved = std::distance(it, tasks.end());
-        tasks.erase(it, tasks.end());
-        if (numRemoved > 0)
-        { // Ensure something was actually removed
-            saveTasks(tasks);
-            std::cout << "Task " << id << " deleted successfully." << std::endl;
-        }
-        else
-        {
-            // This case should technically not be reached if remove_if finds something,
-            // but added for robustness.
-            std::cerr << "Error: Task with ID " << id << " found but could not be erased." << std::endl;
-        }
+    if (numRemoved > 0)
+    { // Check if any elements were actually removed
+        saveTasks(tasks);
+        std::cout << "Task " << id << " deleted successfully." << std::endl;
     }
     else
     {
@@ -590,29 +564,20 @@ void deleteTask(std::vector<Task> &tasks, int id)
 
 void markTaskStatus(std::vector<Task> &tasks, int id, const std::string &status)
 {
-    // Basic validation moved into the Task::setStatus method, but can double-check here if desired
+    // Basic validation of the status string remains useful
     if (status != "todo" && status != "in-progress" && status != "done")
     {
         std::cerr << "Error: Invalid status '" << status << "'. Use 'todo', 'in-progress', or 'done'." << std::endl;
         return;
     }
+    auto it = std::ranges::find_if(tasks, [id](const Task &task)
+                                   { return task.getID() == id; });
 
-    bool found = false;
-    for (auto &task : tasks)
-    { // Need non-const reference to modify
-        if (task.getID() == id)
-        {
-            task.setStatus(status); // Use setter (validates status and updates timestamp)
-            found = true;
-            break;
-        }
-    }
-
-    if (found)
-    {
-        // Check if status actually changed (setStatus might have printed a warning but not changed if invalid)
-        // No, setStatus handles the warning. Just save if found.
+    if (it != tasks.end())
+    {                          // Check if found
+        it->setStatus(status); // Use setter via iterator (setter validates & handles timestamp)
         saveTasks(tasks);
+        // The setStatus method now prints warnings, so a simple notification is sufficient
         std::cout << "Task " << id << " status updated." << std::endl; // Message adjusted slightly
     }
     else
@@ -631,21 +596,28 @@ void listTasks(const std::vector<Task> &tasks, const std::string &filter = "all"
     std::cout << " ---" << std::endl;
 
     bool tasksDisplayed = false;
+    // Looping can stay simple, or could use std::views::filter etc.
+    // Sticking to simple loop for clarity comparison with original.
     for (const auto &task : tasks)
     {
         // Use getter for filtering
         bool matchFilter = (filter == "all" || task.getStatus() == filter);
-
         if (matchFilter)
         {
             tasksDisplayed = true;
-            // Use getters for display
-            std::cout << "ID: " << task.getID() << "\n";
-            std::cout << "  Description: " << task.getDescription() << "\n";
-            std::cout << "  Status: " << task.getStatus() << "\n";
-            std::cout << "  Created: " << task.getCreatedAt() << "\n";
-            std::cout << "  Updated: " << task.getUpdatedAt() << "\n";
-            std::cout << "-------------" << std::endl;
+            // Use getters for display - using std::format for cleaner output
+            std::cout << std::format(
+                "ID: {}\n"
+                "  Description: {}\n"
+                "  Status: {}\n"
+                "  Created: {}\n"
+                "  Updated: {}\n"
+                "-------------\n",
+                task.getID(),
+                task.getDescription(),
+                task.getStatus(),
+                task.getCreatedAt(),
+                task.getUpdatedAt());
         }
     }
 
@@ -665,26 +637,33 @@ void listTasks(const std::vector<Task> &tasks, const std::string &filter = "all"
 
 void printUsage()
 {
-    std::cout << "\nUsage: task-cli <command> [options]\n\n";
-    std::cout << "Commands:\n";
-    std::cout << "  add <\"description\">        Add a new task (use quotes for descriptions with spaces)\n";
-    std::cout << "  update <id> <\"description\">  Update task description (use quotes)\n";
-    std::cout << "  delete <id>                Delete a task by ID\n";
-    std::cout << "  mark-in-progress <id>    Mark task as 'in-progress'\n";
-    std::cout << "  mark-done <id>             Mark task as 'done'\n";
-    std::cout << "  mark-todo <id>             Mark task as 'todo'\n";
-    std::cout << "  list [all|todo|in-progress|done]  List tasks (default: all)\n";
-    std::cout << "  help                       Show this help message\n";
-    std::cout << "\nExample:\n";
-    std::cout << "  ./task-cli add \"Submit project report\"\n";
-    std::cout << "  ./task-cli list todo\n";
-    std::cout << "  ./task-cli mark-in-progress 1\n";
-    std::cout << "\nNote: Task descriptions containing spaces must be enclosed in double quotes.\n";
+    // Using std::format with a raw string literal for easier multiline formatting
+    std::cout << std::format(R"(
+Usage: task-cli <command> [options]
+
+Commands:
+  add <"description">        Add a new task (use quotes for descriptions with spaces)
+  update <id> <"description">  Update task description (use quotes)
+  delete <id>                Delete a task by ID
+  mark-in-progress <id>    Mark task as 'in-progress'
+  mark-done <id>             Mark task as 'done'
+  mark-todo <id>             Mark task as 'todo'
+  list [all|todo|in-progress|done]  List tasks (default: all)
+  help                       Show this help message
+
+Example:
+  ./task-cli add "Submit project report"
+  ./task-cli list todo
+  ./task-cli mark-in-progress 1
+
+Note: Task descriptions containing spaces must be enclosed in double quotes.
+)");
 }
 
 // --- Main Application Logic ---
 int main(int argc, char *argv[])
 {
+    // Check for help command or insufficient arguments
     if (argc < 2 || std::string(argv[1]) == "help" || std::string(argv[1]) == "--help")
     {
         printUsage();
@@ -705,7 +684,7 @@ int main(int argc, char *argv[])
     std::string command = argv[1];
     int exitCode = 0; // Default to success
 
-    try
+    try // Main command processing block
     {
         if (command == "add")
         {
@@ -726,13 +705,14 @@ int main(int argc, char *argv[])
             if (argc >= 3)
             { // Allow filter argument
                 filter = argv[2];
+                // Validate filter
                 if (filter != "all" && filter != "todo" && filter != "in-progress" && filter != "done")
                 {
                     std::cerr << "Error: Invalid filter '" << filter << "'. Use 'all', 'todo', 'in-progress', or 'done'." << std::endl;
                     printUsage();
                     exitCode = 1;
                 }
-                else if (argc > 3)
+                else if (argc > 3) // Check for too many arguments
                 {
                     std::cerr << "Error: 'list' command takes at most one argument (filter)." << std::endl;
                     printUsage();
@@ -740,12 +720,12 @@ int main(int argc, char *argv[])
                 }
                 else
                 {
-                    listTasks(tasks, filter);
+                    listTasks(tasks, filter); // Call with valid filter
                 }
             }
             else
             {                             // No filter provided
-                listTasks(tasks, filter); // listTasks defaults to "all"
+                listTasks(tasks, filter); // Call with default "all" filter
             }
         }
         else if (command == "update")
@@ -823,9 +803,10 @@ int main(int argc, char *argv[])
         {
             std::cerr << "Error: Unknown command '" << command << "'." << std::endl;
             printUsage();
-            exitCode = 1;
+            exitCode = 1; // Unknown command is an error
         }
     }
+    // Catch errors from std::stoi
     catch (const std::invalid_argument &e)
     {
         std::cerr << "Error: Invalid number format provided for task ID. Please use an integer." << std::endl;
@@ -836,8 +817,9 @@ int main(int argc, char *argv[])
         std::cerr << "Error: Provided task ID is too large or too small." << std::endl;
         exitCode = 1;
     }
+    // Catch any other standard exceptions during command processing
     catch (const std::exception &e)
-    { // Catch any other standard exceptions
+    {
         std::cerr << "An unexpected error occurred: " << e.what() << std::endl;
         exitCode = 1;
     }
