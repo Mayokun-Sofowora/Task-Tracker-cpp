@@ -33,9 +33,9 @@ This project serves as a practical exercise in C++ programming, covering:
 
 **To Compile the program:** Open your terminal, navigate to the directory containing `task-cli.cpp`, and run the command:
 
-    ```bash
+   ```bash
     g++ task-cli.cpp -o task-cli -std=c++20
-    ```    
+   ```    
 If successful, you will find an executable file named `task-cli` (or `task-cli.exe`) in the same directory.
 
 ## Usage
